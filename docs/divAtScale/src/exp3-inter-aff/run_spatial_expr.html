@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
 <meta name="generator" content="pdoc 0.10.0" />
-<title>divAtScale.src.helpers.set_helpers.diversity_measures API documentation</title>
-<meta name="description" content="" />
+<title>divAtScale.src.exp3-inter-aff.run_spatial_expr API documentation</title>
+<meta name="description" content="RELEASE …" />
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
 <link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
@@ -19,40 +19,68 @@
 <main>
 <article id="content">
 <header>
-<h1 class="title">Module <code>divAtScale.src.helpers.set_helpers.diversity_measures</code></h1>
+<h1 class="title">Module <code>divAtScale.src.exp3-inter-aff.run_spatial_expr</code></h1>
 </header>
 <section id="section-intro">
+<p>RELEASE</p>
+<ul>
+<li>scale: inter-affordance</li>
+<li>div type: spatial diversity</li>
+<li>extra info: again, znormed per user.</li>
+</ul>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">import numpy as np
-from tqdm import tqdm
+<pre><code class="python">&#34;&#34;&#34;
+RELEASE
 
-def compute_percentile_score(R):
-    &#34;&#34;&#34;
-    Strict percentile score
+* scale: inter-affordance
+* div type: spatial diversity
+* extra info: again, znormed per user.
 
-    Args:
-        R (np.array): array of redundancy scores
+&#34;&#34;&#34;
 
-    Returns:
-        np.array : percentile score for each session.
-    &#34;&#34;&#34;
-    return np.array([len(R[R &lt; x]) / len(R) for x in tqdm(R)])
+from divAtScale.src.helpers.dataset_helpers.read_x_process import read_config, load_fs2_inter_condition, \
+    sub_sample_lh_df
+from divAtScale.src.helpers.semantic_helpers.diversity_measures import get_sim_between_aff
+import json
+import numpy as np
+import pandas as pd
 
 
-def comp_R(s):
-    &#34;&#34;&#34;
-    Compute Redundancy (R = 1 - A/P)
+if __name__ == &#39;__main__&#39;:
 
-    Args:
-        s (list): a session of artist ids
+    config = read_config(&#39;./expr_config.json&#39;)
+    YEAR = config[&#39;year&#39;]
+    N_SAMPLE = config[&#39;n_sample&#39;]
+    SEED = config[&#39;r_seed&#39;]
+    release = config[&#39;use_release&#39;]
+    data_dir = &#34;./data/&#34; + str(YEAR) + &#34;_release&#34;
+    fig_dir = data_dir + &#34;/Figs&#34;
+    res_dir = data_dir + &#34;/res&#34;
+    pop_a = np.load(data_dir + &#34;/pop_artists.npy&#34;)
+    e = np.load(data_dir + &#34;/e_balanced.npy&#34;)
+    with open(data_dir + &#34;/mid2aid_balanced&#34;, &#39;r&#39;) as json_file:
+        mid2aid = json.load(json_file)  # matrix id --&gt; artist_id
+    aid2mid = {value: key for key, value in mid2aid.items()}
 
-    Returns:
-        float : R score
-    &#34;&#34;&#34;
-    return 1 - (len(set(s)) / len(s))</code></pre>
+    print(&#34;\n*** Experiment 3.1.: inter-aff spatial disparity&#34;)
+
+    multi_a_sess = load_fs2_inter_condition(data_dir)
+    if N_SAMPLE != -1:
+        multi_a_sess = sub_sample_lh_df(multi_a_sess, N_SAMPLE, SEED)
+
+    # in order QP, QA, QE, PA, PE, AE
+    aff_sim_res, p_failed = get_sim_between_aff(multi_a_sess, e, aid2mid, subset_a=pop_a)
+    avg_sim = np.mean(aff_sim_res, axis=0)
+    std_sim = np.std(aff_sim_res, axis=0)
+    res_df = pd.DataFrame({&#34;affordance_pair&#34;:[&#34;QP&#34;, &#34;QA&#34;, &#34;QE&#34;, &#34;PA&#34;, &#34;PE&#34;, &#34;AE&#34;],
+                           &#34;avg_cos_sim&#34;:avg_sim,
+                           &#34;std_cos_sim&#34;:std_sim,
+                           &#34;p_failed&#34;:[p_failed, p_failed, p_failed, p_failed, p_failed, p_failed]})
+    res_df.to_csv(res_dir + &#34;/inter_aff_semantic&#34;)
+    print(res_df)</code></pre>
 </details>
 </section>
 <section>
@@ -60,73 +88,6 @@ def comp_R(s):
 <section>
 </section>
 <section>
-<h2 class="section-title" id="header-functions">Functions</h2>
-<dl>
-<dt id="divAtScale.src.helpers.set_helpers.diversity_measures.comp_R"><code class="name flex">
-<span>def <span class="ident">comp_R</span></span>(<span>s)</span>
-</code></dt>
-<dd>
-<div class="desc"><p>Compute Redundancy (R = 1 - A/P)</p>
-<h2 id="args">Args</h2>
-<dl>
-<dt><strong><code>s</code></strong> :&ensp;<code>list</code></dt>
-<dd>a session of artist ids</dd>
-</dl>
-<h2 id="returns">Returns</h2>
-<dl>
-<dt><code>float </code></dt>
-<dd>R score</dd>
-</dl></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def comp_R(s):
-    &#34;&#34;&#34;
-    Compute Redundancy (R = 1 - A/P)
-
-    Args:
-        s (list): a session of artist ids
-
-    Returns:
-        float : R score
-    &#34;&#34;&#34;
-    return 1 - (len(set(s)) / len(s))</code></pre>
-</details>
-</dd>
-<dt id="divAtScale.src.helpers.set_helpers.diversity_measures.compute_percentile_score"><code class="name flex">
-<span>def <span class="ident">compute_percentile_score</span></span>(<span>R)</span>
-</code></dt>
-<dd>
-<div class="desc"><p>Strict percentile score</p>
-<h2 id="args">Args</h2>
-<dl>
-<dt><strong><code>R</code></strong> :&ensp;<code>np.array</code></dt>
-<dd>array of redundancy scores</dd>
-</dl>
-<h2 id="returns">Returns</h2>
-<dl>
-<dt><code>np.array </code></dt>
-<dd>percentile score for each session.</dd>
-</dl></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def compute_percentile_score(R):
-    &#34;&#34;&#34;
-    Strict percentile score
-
-    Args:
-        R (np.array): array of redundancy scores
-
-    Returns:
-        np.array : percentile score for each session.
-    &#34;&#34;&#34;
-    return np.array([len(R[R &lt; x]) / len(R) for x in tqdm(R)])</code></pre>
-</details>
-</dd>
-</dl>
 </section>
 <section>
 </section>
@@ -139,13 +100,7 @@ def comp_R(s):
 <ul id="index">
 <li><h3>Super-module</h3>
 <ul>
-<li><code><a title="divAtScale.src.helpers.set_helpers" href="index.html">divAtScale.src.helpers.set_helpers</a></code></li>
-</ul>
-</li>
-<li><h3><a href="#header-functions">Functions</a></h3>
-<ul class="">
-<li><code><a title="divAtScale.src.helpers.set_helpers.diversity_measures.comp_R" href="#divAtScale.src.helpers.set_helpers.diversity_measures.comp_R">comp_R</a></code></li>
-<li><code><a title="divAtScale.src.helpers.set_helpers.diversity_measures.compute_percentile_score" href="#divAtScale.src.helpers.set_helpers.diversity_measures.compute_percentile_score">compute_percentile_score</a></code></li>
+<li><code><a title="divAtScale.src.exp3-inter-aff" href="index.html">divAtScale.src.exp3-inter-aff</a></code></li>
 </ul>
 </li>
 </ul>
